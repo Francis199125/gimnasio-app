@@ -2,147 +2,41 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 
-// ── Paleta ──────────────────────────────────────────────
 const C = {
-  bg: '#0f1117',
-  surface: '#1a1d27',
-  card: '#21253a',
-  accent: '#f97316',       // naranja energía
-  accentDim: '#7c3a1a',
-  green: '#22c55e',
-  red: '#ef4444',
-  yellow: '#eab308',
-  text: '#f1f5f9',
-  muted: '#94a3b8',
-  border: '#2e3347',
+  bg: '#0f1117', surface: '#1a1d27', card: '#21253a',
+  accent: '#f97316', green: '#22c55e', red: '#ef4444', yellow: '#eab308',
+  text: '#f1f5f9', muted: '#94a3b8', border: '#2e3347',
 }
 
 const styles = {
-  layout: {
-    display: 'flex', minHeight: '100vh',
-    backgroundColor: C.bg, color: C.text,
-    fontFamily: "'Segoe UI', system-ui, sans-serif",
-  },
-  sidebar: {
-    width: '220px', minHeight: '100vh',
-    backgroundColor: C.surface,
-    borderRight: `1px solid ${C.border}`,
-    display: 'flex', flexDirection: 'column',
-    position: 'fixed', top: 0, left: 0, bottom: 0,
-    zIndex: 100,
-  },
-  logo: {
-    padding: '24px 20px 16px',
-    borderBottom: `1px solid ${C.border}`,
-  },
-  logoTitle: {
-    fontSize: '18px', fontWeight: '700',
-    color: C.accent, margin: 0,
-  },
+  layout: { display: 'flex', minHeight: '100vh', backgroundColor: C.bg, color: C.text, fontFamily: "'Segoe UI', system-ui, sans-serif" },
+  sidebar: { width: '220px', minHeight: '100vh', backgroundColor: C.surface, borderRight: `1px solid ${C.border}`, display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 100 },
+  logo: { padding: '24px 20px 16px', borderBottom: `1px solid ${C.border}` },
+  logoTitle: { fontSize: '18px', fontWeight: '700', color: C.accent, margin: 0 },
   logoSub: { fontSize: '11px', color: C.muted, margin: '2px 0 0' },
   nav: { flex: 1, padding: '12px 0' },
-  navItem: (active) => ({
-    display: 'flex', alignItems: 'center', gap: '10px',
-    padding: '10px 20px', cursor: 'pointer',
-    backgroundColor: active ? C.card : 'transparent',
-    borderLeft: active ? `3px solid ${C.accent}` : '3px solid transparent',
-    color: active ? C.text : C.muted,
-    fontSize: '14px', fontWeight: active ? '600' : '400',
-    transition: 'all 0.15s',
-  }),
-  sidebarFooter: {
-    padding: '16px 20px',
-    borderTop: `1px solid ${C.border}`,
-  },
-  main: {
-    marginLeft: '220px', flex: 1,
-    padding: '28px', minHeight: '100vh',
-  },
-  pageHeader: {
-    display: 'flex', justifyContent: 'space-between',
-    alignItems: 'center', marginBottom: '24px',
-  },
+  navItem: (active) => ({ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 20px', cursor: 'pointer', backgroundColor: active ? C.card : 'transparent', borderLeft: active ? `3px solid ${C.accent}` : '3px solid transparent', color: active ? C.text : C.muted, fontSize: '14px', fontWeight: active ? '600' : '400', transition: 'all 0.15s' }),
+  sidebarFooter: { padding: '16px 20px', borderTop: `1px solid ${C.border}` },
+  main: { marginLeft: '220px', flex: 1, padding: '28px', minHeight: '100vh' },
+  pageHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' },
   pageTitle: { fontSize: '22px', fontWeight: '700', margin: 0 },
-  btn: (variant = 'primary') => ({
-    padding: '9px 18px', borderRadius: '8px', border: 'none',
-    cursor: 'pointer', fontSize: '14px', fontWeight: '600',
-    backgroundColor: variant === 'primary' ? C.accent
-      : variant === 'danger' ? C.red
-      : variant === 'success' ? C.green
-      : C.card,
-    color: '#fff',
-    transition: 'opacity 0.15s',
-  }),
-  card: {
-    backgroundColor: C.card, borderRadius: '12px',
-    border: `1px solid ${C.border}`, padding: '20px',
-    marginBottom: '16px',
-  },
-  input: {
-    width: '100%', padding: '10px 12px',
-    backgroundColor: C.surface, border: `1px solid ${C.border}`,
-    borderRadius: '8px', color: C.text, fontSize: '14px',
-    boxSizing: 'border-box', outline: 'none',
-  },
-  label: {
-    display: 'block', fontSize: '12px',
-    color: C.muted, marginBottom: '5px', fontWeight: '600',
-  },
-  table: {
-    width: '100%', borderCollapse: 'collapse', fontSize: '14px',
-  },
-  th: {
-    padding: '10px 14px', textAlign: 'left',
-    borderBottom: `1px solid ${C.border}`,
-    color: C.muted, fontSize: '12px', fontWeight: '600',
-    textTransform: 'uppercase', letterSpacing: '0.05em',
-  },
-  td: {
-    padding: '12px 14px',
-    borderBottom: `1px solid ${C.border}`,
-  },
-  badge: (color) => ({
-    display: 'inline-block',
-    padding: '3px 10px', borderRadius: '20px',
-    fontSize: '12px', fontWeight: '600',
-    backgroundColor: color === 'green' ? '#14532d'
-      : color === 'red' ? '#7f1d1d'
-      : color === 'yellow' ? '#713f12' : C.card,
-    color: color === 'green' ? C.green
-      : color === 'red' ? C.red
-      : color === 'yellow' ? C.yellow : C.muted,
-  }),
-  grid2: {
-    display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px',
-  },
-  grid3: {
-    display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px',
-  },
-  statCard: {
-    backgroundColor: C.card, borderRadius: '12px',
-    border: `1px solid ${C.border}`, padding: '20px',
-  },
+  btn: (variant = 'primary') => ({ padding: '9px 18px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '600', backgroundColor: variant === 'primary' ? C.accent : variant === 'danger' ? C.red : variant === 'success' ? C.green : C.card, color: '#fff', transition: 'opacity 0.15s' }),
+  card: { backgroundColor: C.card, borderRadius: '12px', border: `1px solid ${C.border}`, padding: '20px', marginBottom: '16px' },
+  input: { width: '100%', padding: '10px 12px', backgroundColor: C.surface, border: `1px solid ${C.border}`, borderRadius: '8px', color: C.text, fontSize: '14px', boxSizing: 'border-box', outline: 'none' },
+  label: { display: 'block', fontSize: '12px', color: C.muted, marginBottom: '5px', fontWeight: '600' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '14px' },
+  th: { padding: '10px 14px', textAlign: 'left', borderBottom: `1px solid ${C.border}`, color: C.muted, fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' },
+  td: { padding: '12px 14px', borderBottom: `1px solid ${C.border}` },
+  badge: (color) => ({ display: 'inline-block', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '600', backgroundColor: color === 'green' ? '#14532d' : color === 'red' ? '#7f1d1d' : color === 'yellow' ? '#713f12' : C.card, color: color === 'green' ? C.green : color === 'red' ? C.red : color === 'yellow' ? C.yellow : C.muted }),
+  grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' },
+  statCard: { backgroundColor: C.card, borderRadius: '12px', border: `1px solid ${C.border}`, padding: '20px' },
   statNum: { fontSize: '32px', fontWeight: '800', margin: '4px 0' },
   statLabel: { fontSize: '13px', color: C.muted },
-  modal: {
-    position: 'fixed', inset: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    zIndex: 999,
-  },
-  modalBox: {
-    backgroundColor: C.card, borderRadius: '14px',
-    border: `1px solid ${C.border}`,
-    padding: '28px', width: '500px', maxWidth: '95vw',
-    maxHeight: '90vh', overflowY: 'auto',
-  },
-  alert: (type) => ({
-    padding: '10px 14px', borderRadius: '8px', fontSize: '14px',
-    marginBottom: '14px',
-    backgroundColor: type === 'error' ? '#7f1d1d' : '#14532d',
-    color: type === 'error' ? C.red : C.green,
-    border: `1px solid ${type === 'error' ? C.red : C.green}`,
-  }),
+  modal: { position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999 },
+  modalBox: { backgroundColor: C.card, borderRadius: '14px', border: `1px solid ${C.border}`, padding: '28px', width: '560px', maxWidth: '95vw', maxHeight: '90vh', overflowY: 'auto' },
+  alert: (type) => ({ padding: '10px 14px', borderRadius: '8px', fontSize: '14px', marginBottom: '14px', backgroundColor: type === 'error' ? '#7f1d1d' : '#14532d', color: type === 'error' ? C.red : C.green, border: `1px solid ${type === 'error' ? C.red : C.green}` }),
+  tabs: { display: 'flex', gap: '4px', marginBottom: '20px', backgroundColor: C.surface, padding: '4px', borderRadius: '10px', width: 'fit-content' },
+  tab: (active) => ({ padding: '8px 18px', borderRadius: '7px', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', backgroundColor: active ? C.accent : 'transparent', color: active ? '#fff' : C.muted, transition: 'all 0.15s' }),
 }
 
 const NAV = [
@@ -159,106 +53,58 @@ const NAV = [
 function ModuloClientes() {
   const [clientes, setClientes] = useState([])
   const [busqueda, setBusqueda] = useState('')
-  const [modal, setModal] = useState(null) // null | 'nuevo' | 'editar'
+  const [modal, setModal] = useState(null)
   const [seleccionado, setSeleccionado] = useState(null)
-  const [form, setForm] = useState({
-    cui: '', nombre: '', apellido_paterno: '', apellido_materno: '',
-    telefono: '', observaciones: '', password_hash: '',
-  })
+  const [form, setForm] = useState({ cui: '', nombre: '', apellido_paterno: '', apellido_materno: '', telefono: '', observaciones: '', password_hash: '' })
   const [msg, setMsg] = useState(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => { cargarClientes() }, [])
 
   async function cargarClientes() {
-    const { data } = await supabase
-      .from('usuarios')
-      .select('*')
-      .eq('rol', 'cliente')
-      .order('fecha_registro', { ascending: false })
+    const { data } = await supabase.from('usuarios').select('*').eq('rol', 'cliente').order('fecha_registro', { ascending: false })
     setClientes(data || [])
   }
 
   const filtrados = clientes.filter(c =>
-    `${c.nombre} ${c.apellido_paterno} ${c.apellido_materno} ${c.cui} ${c.telefono}`
-      .toLowerCase().includes(busqueda.toLowerCase())
+    `${c.nombre} ${c.apellido_paterno} ${c.apellido_materno} ${c.cui} ${c.telefono}`.toLowerCase().includes(busqueda.toLowerCase())
   )
 
   function abrirNuevo() {
     setForm({ cui: '', nombre: '', apellido_paterno: '', apellido_materno: '', telefono: '', observaciones: '', password_hash: '' })
-    setMsg(null)
-    setModal('nuevo')
+    setMsg(null); setModal('nuevo')
   }
 
   function abrirEditar(c) {
     setSeleccionado(c)
     setForm({ cui: c.cui, nombre: c.nombre, apellido_paterno: c.apellido_paterno, apellido_materno: c.apellido_materno || '', telefono: c.telefono || '', observaciones: c.observaciones || '', password_hash: '' })
-    setMsg(null)
-    setModal('editar')
+    setMsg(null); setModal('editar')
   }
 
   async function guardarNuevo() {
     if (!form.cui || !form.nombre || !form.apellido_paterno || !form.password_hash) {
-      setMsg({ type: 'error', text: 'CUI, nombre, apellido paterno y contraseña son obligatorios' })
-      return
+      setMsg({ type: 'error', text: 'CUI, nombre, apellido paterno y contraseña son obligatorios' }); return
     }
     setLoading(true)
-    // Crear en Auth
-    const email = `${form.cui}@gimnasio.local`
-    const { error: authErr } = await supabase.auth.admin
-      ? { error: null } // admin API no disponible en cliente
-      : { error: null }
-
-    // Crear usuario via signUp (el admin lo hace por el usuario)
-    const { error: signErr } = await supabase.auth.signUp({
-      email,
-      password: form.password_hash,
-      options: { emailRedirectTo: undefined }
-    })
-
+    const { error: signErr } = await supabase.auth.signUp({ email: `${form.cui}@gimnasio.local`, password: form.password_hash, options: { emailRedirectTo: undefined } })
     if (signErr && !signErr.message.includes('already registered')) {
-      setMsg({ type: 'error', text: 'Error al crear acceso: ' + signErr.message })
-      setLoading(false)
-      return
+      setMsg({ type: 'error', text: 'Error al crear acceso: ' + signErr.message }); setLoading(false); return
     }
-
-    // Insertar en tabla usuarios
-    const { error: dbErr } = await supabase.from('usuarios').insert({
-      cui: form.cui,
-      nombre: form.nombre,
-      apellido_paterno: form.apellido_paterno,
-      apellido_materno: form.apellido_materno,
-      telefono: form.telefono,
-      observaciones: form.observaciones,
-      rol: 'cliente',
-      password_hash: 'auth',
-    })
-
+    const { error: dbErr } = await supabase.from('usuarios').insert({ cui: form.cui, nombre: form.nombre, apellido_paterno: form.apellido_paterno, apellido_materno: form.apellido_materno, telefono: form.telefono, observaciones: form.observaciones, rol: 'cliente', password_hash: 'auth' })
     setLoading(false)
     if (dbErr) { setMsg({ type: 'error', text: dbErr.message }); return }
     setMsg({ type: 'success', text: 'Cliente creado correctamente' })
-    cargarClientes()
-    setTimeout(() => setModal(null), 1200)
+    cargarClientes(); setTimeout(() => setModal(null), 1200)
   }
 
   async function guardarEdicion() {
-    if (!form.nombre || !form.apellido_paterno) {
-      setMsg({ type: 'error', text: 'Nombre y apellido paterno son obligatorios' })
-      return
-    }
+    if (!form.nombre || !form.apellido_paterno) { setMsg({ type: 'error', text: 'Nombre y apellido paterno son obligatorios' }); return }
     setLoading(true)
-    const { error } = await supabase.from('usuarios').update({
-      nombre: form.nombre,
-      apellido_paterno: form.apellido_paterno,
-      apellido_materno: form.apellido_materno,
-      telefono: form.telefono,
-      observaciones: form.observaciones,
-    }).eq('id', seleccionado.id)
+    const { error } = await supabase.from('usuarios').update({ nombre: form.nombre, apellido_paterno: form.apellido_paterno, apellido_materno: form.apellido_materno, telefono: form.telefono, observaciones: form.observaciones }).eq('id', seleccionado.id)
     setLoading(false)
     if (error) { setMsg({ type: 'error', text: error.message }); return }
     setMsg({ type: 'success', text: 'Cliente actualizado' })
-    cargarClientes()
-    setTimeout(() => setModal(null), 1200)
+    cargarClientes(); setTimeout(() => setModal(null), 1200)
   }
 
   async function eliminarCliente(c) {
@@ -274,44 +120,26 @@ function ModuloClientes() {
         <h1 style={styles.pageTitle}>👥 Clientes</h1>
         <button style={styles.btn('primary')} onClick={abrirNuevo}>+ Agregar cliente</button>
       </div>
-
-      <div style={{ ...styles.card, padding: '14px 20px', marginBottom: '16px' }}>
-        <input
-          style={styles.input}
-          placeholder="🔍 Buscar por nombre, CUI, teléfono..."
-          value={busqueda}
-          onChange={e => setBusqueda(e.target.value)}
-        />
+      <div style={{ ...styles.card, padding: '14px 20px' }}>
+        <input style={styles.input} placeholder="🔍 Buscar por nombre, CUI, teléfono..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
       </div>
-
       <div style={styles.card}>
         <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>Nombre</th>
-              <th style={styles.th}>CUI</th>
-              <th style={styles.th}>Teléfono</th>
-              <th style={styles.th}>Observaciones</th>
-              <th style={styles.th}>Acciones</th>
-            </tr>
-          </thead>
+          <thead><tr>
+            <th style={styles.th}>Nombre</th>
+            <th style={styles.th}>CUI</th>
+            <th style={styles.th}>Teléfono</th>
+            <th style={styles.th}>Observaciones</th>
+            <th style={styles.th}>Acciones</th>
+          </tr></thead>
           <tbody>
-            {filtrados.length === 0 && (
-              <tr><td colSpan={5} style={{ ...styles.td, textAlign: 'center', color: C.muted }}>
-                {busqueda ? 'No se encontraron resultados' : 'No hay clientes registrados aún'}
-              </td></tr>
-            )}
+            {filtrados.length === 0 && <tr><td colSpan={5} style={{ ...styles.td, textAlign: 'center', color: C.muted }}>{busqueda ? 'Sin resultados' : 'No hay clientes aún'}</td></tr>}
             {filtrados.map(c => (
-              <tr key={c.id} style={{ transition: 'background 0.1s' }}>
-                <td style={styles.td}>
-                  <strong>{c.nombre} {c.apellido_paterno}</strong>
-                  {c.apellido_materno && <span style={{ color: C.muted }}> {c.apellido_materno}</span>}
-                </td>
+              <tr key={c.id}>
+                <td style={styles.td}><strong>{c.nombre} {c.apellido_paterno}</strong>{c.apellido_materno && <span style={{ color: C.muted }}> {c.apellido_materno}</span>}</td>
                 <td style={{ ...styles.td, color: C.muted, fontFamily: 'monospace' }}>{c.cui}</td>
                 <td style={styles.td}>{c.telefono || <span style={{ color: C.muted }}>—</span>}</td>
-                <td style={{ ...styles.td, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {c.observaciones || <span style={{ color: C.muted }}>—</span>}
-                </td>
+                <td style={{ ...styles.td, maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.observaciones || <span style={{ color: C.muted }}>—</span>}</td>
                 <td style={styles.td}>
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button style={{ ...styles.btn('secondary'), padding: '6px 12px', fontSize: '12px' }} onClick={() => abrirEditar(c)}>Editar</button>
@@ -322,68 +150,292 @@ function ModuloClientes() {
             ))}
           </tbody>
         </table>
-        <div style={{ marginTop: '12px', color: C.muted, fontSize: '13px' }}>
-          {filtrados.length} cliente{filtrados.length !== 1 ? 's' : ''} {busqueda ? 'encontrados' : 'registrados'}
-        </div>
+        <div style={{ marginTop: '12px', color: C.muted, fontSize: '13px' }}>{filtrados.length} cliente{filtrados.length !== 1 ? 's' : ''}</div>
       </div>
 
-      {/* MODAL */}
       {modal && (
         <div style={styles.modal} onClick={e => e.target === e.currentTarget && setModal(null)}>
           <div style={styles.modalBox}>
-            <h2 style={{ margin: '0 0 20px', fontSize: '18px' }}>
-              {modal === 'nuevo' ? '➕ Nuevo cliente' : '✏️ Editar cliente'}
-            </h2>
+            <h2 style={{ margin: '0 0 20px', fontSize: '18px' }}>{modal === 'nuevo' ? '➕ Nuevo cliente' : '✏️ Editar cliente'}</h2>
             {msg && <div style={styles.alert(msg.type)}>{msg.text}</div>}
-
             <div style={styles.grid2}>
-              <div>
-                <label style={styles.label}>CUI *</label>
-                <input style={styles.input} value={form.cui} disabled={modal === 'editar'}
-                  onChange={e => setForm({ ...form, cui: e.target.value })} placeholder="1234567890101" />
-              </div>
-              <div>
-                <label style={styles.label}>Teléfono</label>
-                <input style={styles.input} value={form.telefono}
-                  onChange={e => setForm({ ...form, telefono: e.target.value })} placeholder="55551234" />
-              </div>
-              <div>
-                <label style={styles.label}>Nombre *</label>
-                <input style={styles.input} value={form.nombre}
-                  onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="Nombre" />
-              </div>
-              <div>
-                <label style={styles.label}>Apellido Paterno *</label>
-                <input style={styles.input} value={form.apellido_paterno}
-                  onChange={e => setForm({ ...form, apellido_paterno: e.target.value })} placeholder="Apellido Paterno" />
-              </div>
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={styles.label}>Apellido Materno</label>
-                <input style={styles.input} value={form.apellido_materno}
-                  onChange={e => setForm({ ...form, apellido_materno: e.target.value })} placeholder="Apellido Materno" />
-              </div>
-              {modal === 'nuevo' && (
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={styles.label}>Contraseña inicial *</label>
-                  <input style={styles.input} type="password" value={form.password_hash}
-                    onChange={e => setForm({ ...form, password_hash: e.target.value })} placeholder="Contraseña para que el cliente pueda entrar" />
-                </div>
-              )}
-              <div style={{ gridColumn: '1 / -1' }}>
-                <label style={styles.label}>Observaciones</label>
-                <textarea style={{ ...styles.input, minHeight: '70px', resize: 'vertical' }}
-                  value={form.observaciones}
-                  onChange={e => setForm({ ...form, observaciones: e.target.value })}
-                  placeholder="Lesiones, condiciones especiales, notas..." />
-              </div>
+              <div><label style={styles.label}>CUI *</label><input style={styles.input} value={form.cui} disabled={modal === 'editar'} onChange={e => setForm({ ...form, cui: e.target.value })} placeholder="1234567890101" /></div>
+              <div><label style={styles.label}>Teléfono</label><input style={styles.input} value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} placeholder="55551234" /></div>
+              <div><label style={styles.label}>Nombre *</label><input style={styles.input} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} /></div>
+              <div><label style={styles.label}>Apellido Paterno *</label><input style={styles.input} value={form.apellido_paterno} onChange={e => setForm({ ...form, apellido_paterno: e.target.value })} /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Apellido Materno</label><input style={styles.input} value={form.apellido_materno} onChange={e => setForm({ ...form, apellido_materno: e.target.value })} /></div>
+              {modal === 'nuevo' && <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Contraseña inicial *</label><input style={styles.input} type="password" value={form.password_hash} onChange={e => setForm({ ...form, password_hash: e.target.value })} placeholder="Contraseña para el cliente" /></div>}
+              <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Observaciones</label><textarea style={{ ...styles.input, minHeight: '70px', resize: 'vertical' }} value={form.observaciones} onChange={e => setForm({ ...form, observaciones: e.target.value })} placeholder="Lesiones, notas especiales..." /></div>
             </div>
-
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
               <button style={styles.btn('secondary')} onClick={() => setModal(null)}>Cancelar</button>
-              <button style={styles.btn('primary')} disabled={loading}
-                onClick={modal === 'nuevo' ? guardarNuevo : guardarEdicion}>
-                {loading ? 'Guardando...' : modal === 'nuevo' ? 'Crear cliente' : 'Guardar cambios'}
-              </button>
+              <button style={styles.btn('primary')} disabled={loading} onClick={modal === 'nuevo' ? guardarNuevo : guardarEdicion}>{loading ? 'Guardando...' : modal === 'nuevo' ? 'Crear cliente' : 'Guardar'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ══════════════════════════════════════════════════════════
+// MÓDULO: MEMBRESÍAS
+// ══════════════════════════════════════════════════════════
+function ModuloMembresias() {
+  const [tab, setTab] = useState('asignadas')
+  const [membresias, setMembresias] = useState([])
+  const [tipos, setTipos] = useState([])
+  const [clientes, setClientes] = useState([])
+  const [modal, setModal] = useState(null)
+  const [seleccionado, setSeleccionado] = useState(null)
+  const [msg, setMsg] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [formTipo, setFormTipo] = useState({ nombre: '', duracion_meses: '', precio: '', descripcion: '' })
+  const [formMem, setFormMem] = useState({ cliente_id: '', tipo_membresia_id: '', precio_pagado: '', fecha_inicio: new Date().toISOString().split('T')[0], fecha_fin: '', monto_pagado: '', modo_fecha: 'meses', meses_duracion: '' })
+
+  useEffect(() => { cargarTodo() }, [])
+
+  async function cargarTodo() {
+    const [{ data: m }, { data: t }, { data: c }] = await Promise.all([
+      supabase.from('membresias').select('*, cliente:cliente_id(nombre,apellido_paterno), tipo:tipo_membresia_id(nombre,precio)').order('fecha_registro', { ascending: false }),
+      supabase.from('tipos_membresia').select('*').eq('activo', true).order('precio'),
+      supabase.from('usuarios').select('id,nombre,apellido_paterno,cui').eq('rol', 'cliente').order('nombre'),
+    ])
+    setMembresias(m || []); setTipos(t || []); setClientes(c || [])
+  }
+
+  function calcularFechaFin(inicio, meses) {
+    if (!inicio || !meses) return ''
+    const d = new Date(inicio)
+    d.setDate(d.getDate() + Math.round(parseFloat(meses) * 30.44))
+    return d.toISOString().split('T')[0]
+  }
+
+  function onChangeFechaInicio(val) {
+    setFormMem({ ...formMem, fecha_inicio: val, fecha_fin: formMem.modo_fecha === 'meses' ? calcularFechaFin(val, formMem.meses_duracion) : formMem.fecha_fin })
+  }
+
+  function onChangeMeses(val) {
+    setFormMem({ ...formMem, meses_duracion: val, fecha_fin: calcularFechaFin(formMem.fecha_inicio, val) })
+  }
+
+  function onChangeTipo(id) {
+    const tipo = tipos.find(t => t.id === id)
+    setFormMem({ ...formMem, tipo_membresia_id: id, precio_pagado: tipo ? tipo.precio : '' })
+  }
+
+  async function guardarTipo() {
+    if (!formTipo.nombre || !formTipo.precio) { setMsg({ type: 'error', text: 'Nombre y precio son obligatorios' }); return }
+    setLoading(true)
+    const op = seleccionado
+      ? supabase.from('tipos_membresia').update({ nombre: formTipo.nombre, duracion_meses: formTipo.duracion_meses || null, precio: formTipo.precio, descripcion: formTipo.descripcion }).eq('id', seleccionado.id)
+      : supabase.from('tipos_membresia').insert({ nombre: formTipo.nombre, duracion_meses: formTipo.duracion_meses || null, precio: formTipo.precio, descripcion: formTipo.descripcion })
+    const { error } = await op
+    setLoading(false)
+    if (error) { setMsg({ type: 'error', text: error.message }); return }
+    setMsg({ type: 'success', text: seleccionado ? 'Plan actualizado' : 'Plan creado' })
+    cargarTodo(); setTimeout(() => setModal(null), 1200)
+  }
+
+  async function eliminarTipo(t) {
+    if (!confirm(`¿Eliminar el plan "${t.nombre}"?`)) return
+    await supabase.from('tipos_membresia').update({ activo: false }).eq('id', t.id)
+    cargarTodo()
+  }
+
+  async function guardarMembresia() {
+    if (!formMem.cliente_id || !formMem.fecha_inicio || !formMem.fecha_fin || !formMem.precio_pagado) {
+      setMsg({ type: 'error', text: 'Cliente, fechas y precio son obligatorios' }); return
+    }
+    setLoading(true)
+    const monto = parseFloat(formMem.monto_pagado) || 0
+    const precio = parseFloat(formMem.precio_pagado)
+    const estado_pago = monto >= precio ? 'pagado' : monto > 0 ? 'parcial' : 'pendiente'
+    const cui = sessionStorage.getItem('cui')
+    const { data: admin } = await supabase.from('usuarios').select('id').eq('cui', cui).single()
+    const { error } = await supabase.from('membresias').insert({
+      cliente_id: formMem.cliente_id, tipo_membresia_id: formMem.tipo_membresia_id || null,
+      precio_pagado: precio, fecha_inicio: formMem.fecha_inicio, fecha_fin: formMem.fecha_fin,
+      monto_pagado: monto, estado_pago, estado: 'activa', registrado_por: admin?.id || null,
+    })
+    setLoading(false)
+    if (error) { setMsg({ type: 'error', text: error.message }); return }
+    setMsg({ type: 'success', text: 'Membresía registrada correctamente' })
+    cargarTodo(); setTimeout(() => setModal(null), 1200)
+  }
+
+  async function actualizarEstados() {
+    const hoy = new Date().toISOString().split('T')[0]
+    await supabase.from('membresias').update({ estado: 'vencida' }).lt('fecha_fin', hoy).eq('estado', 'activa')
+    cargarTodo()
+  }
+
+  const estadoBadge = (m) => {
+    if (m.estado === 'vencida') return <span style={styles.badge('red')}>Vencida</span>
+    if (m.estado === 'cancelada') return <span style={styles.badge('yellow')}>Cancelada</span>
+    const dias = Math.ceil((new Date(m.fecha_fin) - new Date()) / 86400000)
+    if (dias <= 5) return <span style={styles.badge('yellow')}>Vence en {dias}d</span>
+    return <span style={styles.badge('green')}>Activa</span>
+  }
+
+  const pagoBadge = (m) => {
+    if (m.estado_pago === 'pagado') return <span style={styles.badge('green')}>Pagado</span>
+    if (m.estado_pago === 'parcial') return <span style={styles.badge('yellow')}>Parcial</span>
+    return <span style={styles.badge('red')}>Pendiente</span>
+  }
+
+  return (
+    <div>
+      <div style={styles.pageHeader}>
+        <h1 style={styles.pageTitle}>🏷️ Membresías</h1>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button style={styles.btn('secondary')} onClick={actualizarEstados}>🔄 Actualizar estados</button>
+          {tab === 'planes'
+            ? <button style={styles.btn('primary')} onClick={() => { setSeleccionado(null); setFormTipo({ nombre: '', duracion_meses: '', precio: '', descripcion: '' }); setMsg(null); setModal('tipo') }}>+ Nuevo plan</button>
+            : <button style={styles.btn('primary')} onClick={() => { setFormMem({ cliente_id: '', tipo_membresia_id: '', precio_pagado: '', fecha_inicio: new Date().toISOString().split('T')[0], fecha_fin: '', monto_pagado: '', modo_fecha: 'meses', meses_duracion: '' }); setMsg(null); setModal('membresia') }}>+ Asignar membresía</button>
+          }
+        </div>
+      </div>
+
+      <div style={styles.tabs}>
+        <button style={styles.tab(tab === 'asignadas')} onClick={() => setTab('asignadas')}>📋 Membresías asignadas</button>
+        <button style={styles.tab(tab === 'planes')} onClick={() => setTab('planes')}>📦 Catálogo de planes</button>
+      </div>
+
+      {tab === 'planes' && (
+        <div style={styles.card}>
+          <table style={styles.table}>
+            <thead><tr>
+              <th style={styles.th}>Plan</th><th style={styles.th}>Duración</th>
+              <th style={styles.th}>Precio</th><th style={styles.th}>Descripción</th><th style={styles.th}>Acciones</th>
+            </tr></thead>
+            <tbody>
+              {tipos.length === 0 && <tr><td colSpan={5} style={{ ...styles.td, textAlign: 'center', color: C.muted }}>No hay planes creados aún</td></tr>}
+              {tipos.map(t => (
+                <tr key={t.id}>
+                  <td style={styles.td}><strong>{t.nombre}</strong></td>
+                  <td style={styles.td}>{t.duracion_meses ? `${t.duracion_meses} mes(es)` : <span style={{ color: C.muted }}>Flexible</span>}</td>
+                  <td style={styles.td}><strong style={{ color: C.accent }}>Q{parseFloat(t.precio).toFixed(2)}</strong></td>
+                  <td style={styles.td}>{t.descripcion || <span style={{ color: C.muted }}>—</span>}</td>
+                  <td style={styles.td}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button style={{ ...styles.btn('secondary'), padding: '6px 12px', fontSize: '12px' }} onClick={() => { setSeleccionado(t); setFormTipo({ nombre: t.nombre, duracion_meses: t.duracion_meses || '', precio: t.precio, descripcion: t.descripcion || '' }); setMsg(null); setModal('tipo') }}>Editar</button>
+                      <button style={{ ...styles.btn('danger'), padding: '6px 12px', fontSize: '12px' }} onClick={() => eliminarTipo(t)}>Eliminar</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {tab === 'asignadas' && (
+        <div style={styles.card}>
+          <table style={styles.table}>
+            <thead><tr>
+              <th style={styles.th}>Cliente</th><th style={styles.th}>Plan</th>
+              <th style={styles.th}>Inicio</th><th style={styles.th}>Fin</th>
+              <th style={styles.th}>Precio</th><th style={styles.th}>Pagado</th>
+              <th style={styles.th}>Saldo</th><th style={styles.th}>Estado</th><th style={styles.th}>Pago</th>
+            </tr></thead>
+            <tbody>
+              {membresias.length === 0 && <tr><td colSpan={9} style={{ ...styles.td, textAlign: 'center', color: C.muted }}>No hay membresías registradas</td></tr>}
+              {membresias.map(m => (
+                <tr key={m.id}>
+                  <td style={styles.td}><strong>{m.cliente?.nombre} {m.cliente?.apellido_paterno}</strong></td>
+                  <td style={styles.td}>{m.tipo?.nombre || <span style={{ color: C.muted }}>Libre</span>}</td>
+                  <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: '12px' }}>{m.fecha_inicio}</td>
+                  <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: '12px' }}>{m.fecha_fin}</td>
+                  <td style={styles.td}>Q{parseFloat(m.precio_pagado).toFixed(2)}</td>
+                  <td style={styles.td}>Q{parseFloat(m.monto_pagado || 0).toFixed(2)}</td>
+                  <td style={styles.td}><strong style={{ color: (parseFloat(m.precio_pagado) - parseFloat(m.monto_pagado || 0)) > 0 ? C.yellow : C.green }}>Q{(parseFloat(m.precio_pagado) - parseFloat(m.monto_pagado || 0)).toFixed(2)}</strong></td>
+                  <td style={styles.td}>{estadoBadge(m)}</td>
+                  <td style={styles.td}>{pagoBadge(m)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* MODAL TIPO */}
+      {modal === 'tipo' && (
+        <div style={styles.modal} onClick={e => e.target === e.currentTarget && setModal(null)}>
+          <div style={styles.modalBox}>
+            <h2 style={{ margin: '0 0 20px', fontSize: '18px' }}>{seleccionado ? '✏️ Editar plan' : '➕ Nuevo plan'}</h2>
+            {msg && <div style={styles.alert(msg.type)}>{msg.text}</div>}
+            <div style={styles.grid2}>
+              <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Nombre del plan *</label><input style={styles.input} value={formTipo.nombre} onChange={e => setFormTipo({ ...formTipo, nombre: e.target.value })} placeholder="Ej: Mensual, Anual, 1 hora/semana" /></div>
+              <div><label style={styles.label}>Duración en meses (opcional)</label><input style={styles.input} type="number" step="0.25" value={formTipo.duracion_meses} onChange={e => setFormTipo({ ...formTipo, duracion_meses: e.target.value })} placeholder="Ej: 1, 3, 12, 0.25" /></div>
+              <div><label style={styles.label}>Precio base (Q) *</label><input style={styles.input} type="number" step="0.01" value={formTipo.precio} onChange={e => setFormTipo({ ...formTipo, precio: e.target.value })} placeholder="250.00" /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Descripción</label><input style={styles.input} value={formTipo.descripcion} onChange={e => setFormTipo({ ...formTipo, descripcion: e.target.value })} placeholder="Descripción opcional" /></div>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
+              <button style={styles.btn('secondary')} onClick={() => setModal(null)}>Cancelar</button>
+              <button style={styles.btn('primary')} disabled={loading} onClick={guardarTipo}>{loading ? 'Guardando...' : seleccionado ? 'Guardar cambios' : 'Crear plan'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL MEMBRESÍA */}
+      {modal === 'membresia' && (
+        <div style={styles.modal} onClick={e => e.target === e.currentTarget && setModal(null)}>
+          <div style={styles.modalBox}>
+            <h2 style={{ margin: '0 0 20px', fontSize: '18px' }}>➕ Asignar membresía</h2>
+            {msg && <div style={styles.alert(msg.type)}>{msg.text}</div>}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={styles.label}>Cliente *</label>
+              <select style={styles.input} value={formMem.cliente_id} onChange={e => setFormMem({ ...formMem, cliente_id: e.target.value })}>
+                <option value="">— Seleccionar cliente —</option>
+                {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.apellido_paterno} — {c.cui}</option>)}
+              </select>
+            </div>
+            <div style={{ marginBottom: '14px' }}>
+              <label style={styles.label}>Plan (opcional, el precio se puede ajustar)</label>
+              <select style={styles.input} value={formMem.tipo_membresia_id} onChange={e => onChangeTipo(e.target.value)}>
+                <option value="">— Sin plan / precio libre —</option>
+                {tipos.map(t => <option key={t.id} value={t.id}>{t.nombre} — Q{t.precio}</option>)}
+              </select>
+            </div>
+            <div style={{ ...styles.tabs, marginBottom: '14px' }}>
+              <button style={styles.tab(formMem.modo_fecha === 'meses')} onClick={() => setFormMem({ ...formMem, modo_fecha: 'meses' })}>Por meses</button>
+              <button style={styles.tab(formMem.modo_fecha === 'manual')} onClick={() => setFormMem({ ...formMem, modo_fecha: 'manual' })}>Fechas manuales</button>
+            </div>
+            <div style={styles.grid2}>
+              <div>
+                <label style={styles.label}>Fecha inicio *</label>
+                <input style={styles.input} type="date" value={formMem.fecha_inicio} onChange={e => onChangeFechaInicio(e.target.value)} />
+              </div>
+              {formMem.modo_fecha === 'meses'
+                ? <div><label style={styles.label}>Duración (meses) *</label><input style={styles.input} type="number" step="0.25" placeholder="1, 3, 6, 12, 0.25..." value={formMem.meses_duracion} onChange={e => onChangeMeses(e.target.value)} /></div>
+                : <div><label style={styles.label}>Fecha fin *</label><input style={styles.input} type="date" value={formMem.fecha_fin} onChange={e => setFormMem({ ...formMem, fecha_fin: e.target.value })} /></div>
+              }
+              {formMem.fecha_fin && (
+                <div style={{ gridColumn: '1 / -1', backgroundColor: C.surface, padding: '10px 14px', borderRadius: '8px', fontSize: '13px', color: C.muted }}>
+                  📅 Vence el: <strong style={{ color: C.text }}>{formMem.fecha_fin}</strong>
+                </div>
+              )}
+              <div>
+                <label style={styles.label}>Precio total (Q) *</label>
+                <input style={styles.input} type="number" step="0.01" value={formMem.precio_pagado} onChange={e => setFormMem({ ...formMem, precio_pagado: e.target.value })} placeholder="0.00" />
+              </div>
+              <div>
+                <label style={styles.label}>Monto pagado ahora (Q)</label>
+                <input style={styles.input} type="number" step="0.01" value={formMem.monto_pagado} onChange={e => setFormMem({ ...formMem, monto_pagado: e.target.value })} placeholder="0.00 si no pagó aún" />
+              </div>
+              {formMem.precio_pagado && (
+                <div style={{ gridColumn: '1 / -1', backgroundColor: C.surface, padding: '10px 14px', borderRadius: '8px', fontSize: '13px' }}>
+                  Saldo pendiente: <strong style={{ color: (parseFloat(formMem.precio_pagado) - parseFloat(formMem.monto_pagado || 0)) > 0 ? C.yellow : C.green }}>
+                    Q{(parseFloat(formMem.precio_pagado) - parseFloat(formMem.monto_pagado || 0)).toFixed(2)}
+                  </strong>
+                </div>
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
+              <button style={styles.btn('secondary')} onClick={() => setModal(null)}>Cancelar</button>
+              <button style={styles.btn('primary')} disabled={loading} onClick={guardarMembresia}>{loading ? 'Guardando...' : 'Registrar membresía'}</button>
             </div>
           </div>
         </div>
@@ -401,13 +453,12 @@ function ModuloDashboard() {
 
   useEffect(() => {
     async function cargar() {
-      const [{ count: clientes }, { count: activas }, { count: vencidas }] = await Promise.all([
+      const [{ count: clientes }, { count: activas }, { count: vencidas }, { count: morosos }] = await Promise.all([
         supabase.from('usuarios').select('*', { count: 'exact', head: true }).eq('rol', 'cliente'),
         supabase.from('membresias').select('*', { count: 'exact', head: true }).eq('estado', 'activa'),
         supabase.from('membresias').select('*', { count: 'exact', head: true }).eq('estado', 'vencida'),
+        supabase.from('membresias').select('*', { count: 'exact', head: true }).eq('estado_pago', 'parcial'),
       ])
-      const { count: morosos } = await supabase.from('ventas')
-        .select('*', { count: 'exact', head: true }).eq('estado_pago', 'parcial')
       setStats({ clientes: clientes || 0, activas: activas || 0, vencidas: vencidas || 0, morosos: morosos || 0 })
     }
     cargar()
@@ -425,12 +476,9 @@ function ModuloDashboard() {
       <div style={styles.pageHeader}>
         <div>
           <h1 style={styles.pageTitle}>📊 Dashboard</h1>
-          <p style={{ margin: '4px 0 0', color: C.muted, fontSize: '14px' }}>
-            Bienvenido, {nombre || 'Administrador'}
-          </p>
+          <p style={{ margin: '4px 0 0', color: C.muted, fontSize: '14px' }}>Bienvenido, {nombre || 'Administrador'}</p>
         </div>
       </div>
-
       <div style={styles.grid2}>
         {cards.map((c, i) => (
           <div key={i} style={styles.statCard}>
@@ -439,37 +487,6 @@ function ModuloDashboard() {
             <div style={styles.statLabel}>{c.label}</div>
           </div>
         ))}
-      </div>
-
-      <div style={{ ...styles.card, marginTop: '20px' }}>
-        <h3 style={{ margin: '0 0 12px', color: C.muted, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Accesos rápidos
-        </h3>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          {NAV.filter(n => n.id !== 'dashboard').map(n => (
-            <div key={n.id} style={{ ...styles.btn('secondary'), padding: '10px 16px', cursor: 'default', borderRadius: '8px', fontSize: '14px' }}>
-              {n.icon} {n.label}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ══════════════════════════════════════════════════════════
-// MÓDULO: MEMBRESÍAS (placeholder, siguiente fase)
-// ══════════════════════════════════════════════════════════
-function ModuloMembresias() {
-  return (
-    <div>
-      <div style={styles.pageHeader}>
-        <h1 style={styles.pageTitle}>🏷️ Membresías</h1>
-      </div>
-      <div style={{ ...styles.card, textAlign: 'center', padding: '60px', color: C.muted }}>
-        <div style={{ fontSize: '48px', marginBottom: '12px' }}>🏋️</div>
-        <p style={{ fontSize: '16px' }}>Módulo de membresías — próximamente</p>
-        <p style={{ fontSize: '13px' }}>Aquí podrás asignar y gestionar membresías por cliente</p>
       </div>
     </div>
   )
@@ -523,7 +540,6 @@ export default function AdminPanel() {
 
   return (
     <div style={styles.layout}>
-      {/* SIDEBAR */}
       <aside style={styles.sidebar}>
         <div style={styles.logo}>
           <p style={styles.logoTitle}>💪 GymApp</p>
@@ -531,29 +547,17 @@ export default function AdminPanel() {
         </div>
         <nav style={styles.nav}>
           {NAV.map(item => (
-            <div key={item.id}
-              style={styles.navItem(seccion === item.id)}
-              onClick={() => setSeccion(item.id)}>
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
+            <div key={item.id} style={styles.navItem(seccion === item.id)} onClick={() => setSeccion(item.id)}>
+              <span>{item.icon}</span><span>{item.label}</span>
             </div>
           ))}
         </nav>
         <div style={styles.sidebarFooter}>
-          <div style={{ fontSize: '13px', color: C.muted, marginBottom: '10px' }}>
-            👤 {nombre || 'Admin'}
-          </div>
-          <button style={{ ...styles.btn('danger'), width: '100%', padding: '8px' }}
-            onClick={cerrarSesion}>
-            Cerrar sesión
-          </button>
+          <div style={{ fontSize: '13px', color: C.muted, marginBottom: '10px' }}>👤 {nombre || 'Admin'}</div>
+          <button style={{ ...styles.btn('danger'), width: '100%', padding: '8px' }} onClick={cerrarSesion}>Cerrar sesión</button>
         </div>
       </aside>
-
-      {/* CONTENIDO */}
-      <main style={styles.main}>
-        {modulos[seccion]}
-      </main>
+      <main style={styles.main}>{modulos[seccion]}</main>
     </div>
   )
 }
