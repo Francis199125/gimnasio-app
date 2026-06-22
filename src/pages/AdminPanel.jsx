@@ -70,17 +70,6 @@ function ModuloClientes() {
     `${c.nombre} ${c.apellido_paterno} ${c.apellido_materno} ${c.cui} ${c.telefono}`.toLowerCase().includes(busqueda.toLowerCase())
   )
 
-  function abrirNuevo() {
-    setForm({ cui: '', nombre: '', apellido_paterno: '', apellido_materno: '', telefono: '', observaciones: '', password_hash: '' })
-    setMsg(null); setModal('nuevo')
-  }
-
-  function abrirEditar(c) {
-    setSeleccionado(c)
-    setForm({ cui: c.cui, nombre: c.nombre, apellido_paterno: c.apellido_paterno, apellido_materno: c.apellido_materno || '', telefono: c.telefono || '', observaciones: c.observaciones || '', password_hash: '' })
-    setMsg(null); setModal('editar')
-  }
-
   async function guardarNuevo() {
     if (!form.cui || !form.nombre || !form.apellido_paterno || !form.password_hash) {
       setMsg({ type: 'error', text: 'CUI, nombre, apellido paterno y contraseña son obligatorios' }); return
@@ -88,7 +77,7 @@ function ModuloClientes() {
     setLoading(true)
     const { error: signErr } = await supabase.auth.signUp({ email: `${form.cui}@gimnasio.local`, password: form.password_hash, options: { emailRedirectTo: undefined } })
     if (signErr && !signErr.message.includes('already registered')) {
-      setMsg({ type: 'error', text: 'Error al crear acceso: ' + signErr.message }); setLoading(false); return
+      setMsg({ type: 'error', text: 'Error: ' + signErr.message }); setLoading(false); return
     }
     const { error: dbErr } = await supabase.from('usuarios').insert({ cui: form.cui, nombre: form.nombre, apellido_paterno: form.apellido_paterno, apellido_materno: form.apellido_materno, telefono: form.telefono, observaciones: form.observaciones, rol: 'cliente', password_hash: 'auth' })
     setLoading(false)
@@ -108,9 +97,8 @@ function ModuloClientes() {
   }
 
   async function eliminarCliente(c) {
-    if (!confirm(`¿Eliminar a ${c.nombre} ${c.apellido_paterno}? Esta acción no se puede deshacer.`)) return
-    const { error } = await supabase.from('usuarios').delete().eq('id', c.id)
-    if (error) { alert('Error: ' + error.message); return }
+    if (!confirm(`¿Eliminar a ${c.nombre} ${c.apellido_paterno}?`)) return
+    await supabase.from('usuarios').delete().eq('id', c.id)
     cargarClientes()
   }
 
@@ -118,31 +106,25 @@ function ModuloClientes() {
     <div>
       <div style={styles.pageHeader}>
         <h1 style={styles.pageTitle}>👥 Clientes</h1>
-        <button style={styles.btn('primary')} onClick={abrirNuevo}>+ Agregar cliente</button>
+        <button style={styles.btn('primary')} onClick={() => { setForm({ cui: '', nombre: '', apellido_paterno: '', apellido_materno: '', telefono: '', observaciones: '', password_hash: '' }); setMsg(null); setModal('nuevo') }}>+ Agregar cliente</button>
       </div>
       <div style={{ ...styles.card, padding: '14px 20px' }}>
         <input style={styles.input} placeholder="🔍 Buscar por nombre, CUI, teléfono..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
       </div>
       <div style={styles.card}>
         <table style={styles.table}>
-          <thead><tr>
-            <th style={styles.th}>Nombre</th>
-            <th style={styles.th}>CUI</th>
-            <th style={styles.th}>Teléfono</th>
-            <th style={styles.th}>Observaciones</th>
-            <th style={styles.th}>Acciones</th>
-          </tr></thead>
+          <thead><tr><th style={styles.th}>Nombre</th><th style={styles.th}>CUI</th><th style={styles.th}>Teléfono</th><th style={styles.th}>Observaciones</th><th style={styles.th}>Acciones</th></tr></thead>
           <tbody>
             {filtrados.length === 0 && <tr><td colSpan={5} style={{ ...styles.td, textAlign: 'center', color: C.muted }}>{busqueda ? 'Sin resultados' : 'No hay clientes aún'}</td></tr>}
             {filtrados.map(c => (
               <tr key={c.id}>
                 <td style={styles.td}><strong>{c.nombre} {c.apellido_paterno}</strong>{c.apellido_materno && <span style={{ color: C.muted }}> {c.apellido_materno}</span>}</td>
                 <td style={{ ...styles.td, color: C.muted, fontFamily: 'monospace' }}>{c.cui}</td>
-                <td style={styles.td}>{c.telefono || <span style={{ color: C.muted }}>—</span>}</td>
-                <td style={{ ...styles.td, maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.observaciones || <span style={{ color: C.muted }}>—</span>}</td>
+                <td style={styles.td}>{c.telefono || '—'}</td>
+                <td style={{ ...styles.td, maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.observaciones || '—'}</td>
                 <td style={styles.td}>
                   <div style={{ display: 'flex', gap: '8px' }}>
-                    <button style={{ ...styles.btn('secondary'), padding: '6px 12px', fontSize: '12px' }} onClick={() => abrirEditar(c)}>Editar</button>
+                    <button style={{ ...styles.btn('secondary'), padding: '6px 12px', fontSize: '12px' }} onClick={() => { setSeleccionado(c); setForm({ cui: c.cui, nombre: c.nombre, apellido_paterno: c.apellido_paterno, apellido_materno: c.apellido_materno || '', telefono: c.telefono || '', observaciones: c.observaciones || '', password_hash: '' }); setMsg(null); setModal('editar') }}>Editar</button>
                     <button style={{ ...styles.btn('danger'), padding: '6px 12px', fontSize: '12px' }} onClick={() => eliminarCliente(c)}>Eliminar</button>
                   </div>
                 </td>
@@ -150,9 +132,8 @@ function ModuloClientes() {
             ))}
           </tbody>
         </table>
-        <div style={{ marginTop: '12px', color: C.muted, fontSize: '13px' }}>{filtrados.length} cliente{filtrados.length !== 1 ? 's' : ''}</div>
+        <div style={{ marginTop: '12px', color: C.muted, fontSize: '13px' }}>{filtrados.length} cliente(s)</div>
       </div>
-
       {modal && (
         <div style={styles.modal} onClick={e => e.target === e.currentTarget && setModal(null)}>
           <div style={styles.modalBox}>
@@ -160,16 +141,16 @@ function ModuloClientes() {
             {msg && <div style={styles.alert(msg.type)}>{msg.text}</div>}
             <div style={styles.grid2}>
               <div><label style={styles.label}>CUI *</label><input style={styles.input} value={form.cui} disabled={modal === 'editar'} onChange={e => setForm({ ...form, cui: e.target.value })} placeholder="1234567890101" /></div>
-              <div><label style={styles.label}>Teléfono</label><input style={styles.input} value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} placeholder="55551234" /></div>
+              <div><label style={styles.label}>Teléfono</label><input style={styles.input} value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} /></div>
               <div><label style={styles.label}>Nombre *</label><input style={styles.input} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} /></div>
               <div><label style={styles.label}>Apellido Paterno *</label><input style={styles.input} value={form.apellido_paterno} onChange={e => setForm({ ...form, apellido_paterno: e.target.value })} /></div>
               <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Apellido Materno</label><input style={styles.input} value={form.apellido_materno} onChange={e => setForm({ ...form, apellido_materno: e.target.value })} /></div>
-              {modal === 'nuevo' && <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Contraseña inicial *</label><input style={styles.input} type="password" value={form.password_hash} onChange={e => setForm({ ...form, password_hash: e.target.value })} placeholder="Contraseña para el cliente" /></div>}
-              <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Observaciones</label><textarea style={{ ...styles.input, minHeight: '70px', resize: 'vertical' }} value={form.observaciones} onChange={e => setForm({ ...form, observaciones: e.target.value })} placeholder="Lesiones, notas especiales..." /></div>
+              {modal === 'nuevo' && <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Contraseña *</label><input style={styles.input} type="password" value={form.password_hash} onChange={e => setForm({ ...form, password_hash: e.target.value })} /></div>}
+              <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Observaciones</label><textarea style={{ ...styles.input, minHeight: '70px', resize: 'vertical' }} value={form.observaciones} onChange={e => setForm({ ...form, observaciones: e.target.value })} /></div>
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
               <button style={styles.btn('secondary')} onClick={() => setModal(null)}>Cancelar</button>
-              <button style={styles.btn('primary')} disabled={loading} onClick={modal === 'nuevo' ? guardarNuevo : guardarEdicion}>{loading ? 'Guardando...' : modal === 'nuevo' ? 'Crear cliente' : 'Guardar'}</button>
+              <button style={styles.btn('primary')} disabled={loading} onClick={modal === 'nuevo' ? guardarNuevo : guardarEdicion}>{loading ? 'Guardando...' : 'Guardar'}</button>
             </div>
           </div>
         </div>
@@ -211,19 +192,6 @@ function ModuloMembresias() {
     return d.toISOString().split('T')[0]
   }
 
-  function onChangeFechaInicio(val) {
-    setFormMem({ ...formMem, fecha_inicio: val, fecha_fin: formMem.modo_fecha === 'meses' ? calcularFechaFin(val, formMem.meses_duracion) : formMem.fecha_fin })
-  }
-
-  function onChangeMeses(val) {
-    setFormMem({ ...formMem, meses_duracion: val, fecha_fin: calcularFechaFin(formMem.fecha_inicio, val) })
-  }
-
-  function onChangeTipo(id) {
-    const tipo = tipos.find(t => t.id === id)
-    setFormMem({ ...formMem, tipo_membresia_id: id, precio_pagado: tipo ? tipo.precio : '' })
-  }
-
   async function guardarTipo() {
     if (!formTipo.nombre || !formTipo.precio) { setMsg({ type: 'error', text: 'Nombre y precio son obligatorios' }); return }
     setLoading(true)
@@ -233,14 +201,8 @@ function ModuloMembresias() {
     const { error } = await op
     setLoading(false)
     if (error) { setMsg({ type: 'error', text: error.message }); return }
-    setMsg({ type: 'success', text: seleccionado ? 'Plan actualizado' : 'Plan creado' })
+    setMsg({ type: 'success', text: 'Plan guardado' })
     cargarTodo(); setTimeout(() => setModal(null), 1200)
-  }
-
-  async function eliminarTipo(t) {
-    if (!confirm(`¿Eliminar el plan "${t.nombre}"?`)) return
-    await supabase.from('tipos_membresia').update({ activo: false }).eq('id', t.id)
-    cargarTodo()
   }
 
   async function guardarMembresia() {
@@ -253,26 +215,15 @@ function ModuloMembresias() {
     const estado_pago = monto >= precio ? 'pagado' : monto > 0 ? 'parcial' : 'pendiente'
     const cui = sessionStorage.getItem('cui')
     const { data: admin } = await supabase.from('usuarios').select('id').eq('cui', cui).single()
-    const { error } = await supabase.from('membresias').insert({
-      cliente_id: formMem.cliente_id, tipo_membresia_id: formMem.tipo_membresia_id || null,
-      precio_pagado: precio, fecha_inicio: formMem.fecha_inicio, fecha_fin: formMem.fecha_fin,
-      monto_pagado: monto, estado_pago, estado: 'activa', registrado_por: admin?.id || null,
-    })
+    const { error } = await supabase.from('membresias').insert({ cliente_id: formMem.cliente_id, tipo_membresia_id: formMem.tipo_membresia_id || null, precio_pagado: precio, fecha_inicio: formMem.fecha_inicio, fecha_fin: formMem.fecha_fin, monto_pagado: monto, estado_pago, estado: 'activa', registrado_por: admin?.id || null })
     setLoading(false)
     if (error) { setMsg({ type: 'error', text: error.message }); return }
-    setMsg({ type: 'success', text: 'Membresía registrada correctamente' })
+    setMsg({ type: 'success', text: 'Membresía registrada' })
     cargarTodo(); setTimeout(() => setModal(null), 1200)
-  }
-
-  async function actualizarEstados() {
-    const hoy = new Date().toISOString().split('T')[0]
-    await supabase.from('membresias').update({ estado: 'vencida' }).lt('fecha_fin', hoy).eq('estado', 'activa')
-    cargarTodo()
   }
 
   const estadoBadge = (m) => {
     if (m.estado === 'vencida') return <span style={styles.badge('red')}>Vencida</span>
-    if (m.estado === 'cancelada') return <span style={styles.badge('yellow')}>Cancelada</span>
     const dias = Math.ceil((new Date(m.fecha_fin) - new Date()) / 86400000)
     if (dias <= 5) return <span style={styles.badge('yellow')}>Vence en {dias}d</span>
     return <span style={styles.badge('green')}>Activa</span>
@@ -289,38 +240,32 @@ function ModuloMembresias() {
       <div style={styles.pageHeader}>
         <h1 style={styles.pageTitle}>🏷️ Membresías</h1>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button style={styles.btn('secondary')} onClick={actualizarEstados}>🔄 Actualizar estados</button>
+          <button style={styles.btn('secondary')} onClick={async () => { const hoy = new Date().toISOString().split('T')[0]; await supabase.from('membresias').update({ estado: 'vencida' }).lt('fecha_fin', hoy).eq('estado', 'activa'); cargarTodo() }}>🔄 Actualizar estados</button>
           {tab === 'planes'
             ? <button style={styles.btn('primary')} onClick={() => { setSeleccionado(null); setFormTipo({ nombre: '', duracion_meses: '', precio: '', descripcion: '' }); setMsg(null); setModal('tipo') }}>+ Nuevo plan</button>
-            : <button style={styles.btn('primary')} onClick={() => { setFormMem({ cliente_id: '', tipo_membresia_id: '', precio_pagado: '', fecha_inicio: new Date().toISOString().split('T')[0], fecha_fin: '', monto_pagado: '', modo_fecha: 'meses', meses_duracion: '' }); setMsg(null); setModal('membresia') }}>+ Asignar membresía</button>
-          }
+            : <button style={styles.btn('primary')} onClick={() => { setFormMem({ cliente_id: '', tipo_membresia_id: '', precio_pagado: '', fecha_inicio: new Date().toISOString().split('T')[0], fecha_fin: '', monto_pagado: '', modo_fecha: 'meses', meses_duracion: '' }); setMsg(null); setModal('membresia') }}>+ Asignar membresía</button>}
         </div>
       </div>
-
       <div style={styles.tabs}>
-        <button style={styles.tab(tab === 'asignadas')} onClick={() => setTab('asignadas')}>📋 Membresías asignadas</button>
-        <button style={styles.tab(tab === 'planes')} onClick={() => setTab('planes')}>📦 Catálogo de planes</button>
+        <button style={styles.tab(tab === 'asignadas')} onClick={() => setTab('asignadas')}>📋 Membresías</button>
+        <button style={styles.tab(tab === 'planes')} onClick={() => setTab('planes')}>📦 Planes</button>
       </div>
-
       {tab === 'planes' && (
         <div style={styles.card}>
           <table style={styles.table}>
-            <thead><tr>
-              <th style={styles.th}>Plan</th><th style={styles.th}>Duración</th>
-              <th style={styles.th}>Precio</th><th style={styles.th}>Descripción</th><th style={styles.th}>Acciones</th>
-            </tr></thead>
+            <thead><tr><th style={styles.th}>Plan</th><th style={styles.th}>Duración</th><th style={styles.th}>Precio</th><th style={styles.th}>Descripción</th><th style={styles.th}>Acciones</th></tr></thead>
             <tbody>
-              {tipos.length === 0 && <tr><td colSpan={5} style={{ ...styles.td, textAlign: 'center', color: C.muted }}>No hay planes creados aún</td></tr>}
+              {tipos.length === 0 && <tr><td colSpan={5} style={{ ...styles.td, textAlign: 'center', color: C.muted }}>No hay planes creados</td></tr>}
               {tipos.map(t => (
                 <tr key={t.id}>
                   <td style={styles.td}><strong>{t.nombre}</strong></td>
                   <td style={styles.td}>{t.duracion_meses ? `${t.duracion_meses} mes(es)` : <span style={{ color: C.muted }}>Flexible</span>}</td>
                   <td style={styles.td}><strong style={{ color: C.accent }}>Q{parseFloat(t.precio).toFixed(2)}</strong></td>
-                  <td style={styles.td}>{t.descripcion || <span style={{ color: C.muted }}>—</span>}</td>
+                  <td style={styles.td}>{t.descripcion || '—'}</td>
                   <td style={styles.td}>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button style={{ ...styles.btn('secondary'), padding: '6px 12px', fontSize: '12px' }} onClick={() => { setSeleccionado(t); setFormTipo({ nombre: t.nombre, duracion_meses: t.duracion_meses || '', precio: t.precio, descripcion: t.descripcion || '' }); setMsg(null); setModal('tipo') }}>Editar</button>
-                      <button style={{ ...styles.btn('danger'), padding: '6px 12px', fontSize: '12px' }} onClick={() => eliminarTipo(t)}>Eliminar</button>
+                      <button style={{ ...styles.btn('danger'), padding: '6px 12px', fontSize: '12px' }} onClick={() => { if (confirm(`¿Eliminar "${t.nombre}"?`)) { supabase.from('tipos_membresia').update({ activo: false }).eq('id', t.id).then(() => cargarTodo()) } }}>Eliminar</button>
                     </div>
                   </td>
                 </tr>
@@ -329,18 +274,12 @@ function ModuloMembresias() {
           </table>
         </div>
       )}
-
       {tab === 'asignadas' && (
         <div style={styles.card}>
           <table style={styles.table}>
-            <thead><tr>
-              <th style={styles.th}>Cliente</th><th style={styles.th}>Plan</th>
-              <th style={styles.th}>Inicio</th><th style={styles.th}>Fin</th>
-              <th style={styles.th}>Precio</th><th style={styles.th}>Pagado</th>
-              <th style={styles.th}>Saldo</th><th style={styles.th}>Estado</th><th style={styles.th}>Pago</th>
-            </tr></thead>
+            <thead><tr><th style={styles.th}>Cliente</th><th style={styles.th}>Plan</th><th style={styles.th}>Inicio</th><th style={styles.th}>Fin</th><th style={styles.th}>Precio</th><th style={styles.th}>Pagado</th><th style={styles.th}>Saldo</th><th style={styles.th}>Estado</th><th style={styles.th}>Pago</th></tr></thead>
             <tbody>
-              {membresias.length === 0 && <tr><td colSpan={9} style={{ ...styles.td, textAlign: 'center', color: C.muted }}>No hay membresías registradas</td></tr>}
+              {membresias.length === 0 && <tr><td colSpan={9} style={{ ...styles.td, textAlign: 'center', color: C.muted }}>No hay membresías</td></tr>}
               {membresias.map(m => (
                 <tr key={m.id}>
                   <td style={styles.td}><strong>{m.cliente?.nombre} {m.cliente?.apellido_paterno}</strong></td>
@@ -358,28 +297,24 @@ function ModuloMembresias() {
           </table>
         </div>
       )}
-
-      {/* MODAL TIPO */}
       {modal === 'tipo' && (
         <div style={styles.modal} onClick={e => e.target === e.currentTarget && setModal(null)}>
           <div style={styles.modalBox}>
             <h2 style={{ margin: '0 0 20px', fontSize: '18px' }}>{seleccionado ? '✏️ Editar plan' : '➕ Nuevo plan'}</h2>
             {msg && <div style={styles.alert(msg.type)}>{msg.text}</div>}
             <div style={styles.grid2}>
-              <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Nombre del plan *</label><input style={styles.input} value={formTipo.nombre} onChange={e => setFormTipo({ ...formTipo, nombre: e.target.value })} placeholder="Ej: Mensual, Anual, 1 hora/semana" /></div>
-              <div><label style={styles.label}>Duración en meses (opcional)</label><input style={styles.input} type="number" step="0.25" value={formTipo.duracion_meses} onChange={e => setFormTipo({ ...formTipo, duracion_meses: e.target.value })} placeholder="Ej: 1, 3, 12, 0.25" /></div>
-              <div><label style={styles.label}>Precio base (Q) *</label><input style={styles.input} type="number" step="0.01" value={formTipo.precio} onChange={e => setFormTipo({ ...formTipo, precio: e.target.value })} placeholder="250.00" /></div>
-              <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Descripción</label><input style={styles.input} value={formTipo.descripcion} onChange={e => setFormTipo({ ...formTipo, descripcion: e.target.value })} placeholder="Descripción opcional" /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Nombre *</label><input style={styles.input} value={formTipo.nombre} onChange={e => setFormTipo({ ...formTipo, nombre: e.target.value })} placeholder="Ej: Mensual, Anual" /></div>
+              <div><label style={styles.label}>Duración (meses)</label><input style={styles.input} type="number" step="0.25" value={formTipo.duracion_meses} onChange={e => setFormTipo({ ...formTipo, duracion_meses: e.target.value })} placeholder="1, 3, 12..." /></div>
+              <div><label style={styles.label}>Precio (Q) *</label><input style={styles.input} type="number" step="0.01" value={formTipo.precio} onChange={e => setFormTipo({ ...formTipo, precio: e.target.value })} /></div>
+              <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Descripción</label><input style={styles.input} value={formTipo.descripcion} onChange={e => setFormTipo({ ...formTipo, descripcion: e.target.value })} /></div>
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
               <button style={styles.btn('secondary')} onClick={() => setModal(null)}>Cancelar</button>
-              <button style={styles.btn('primary')} disabled={loading} onClick={guardarTipo}>{loading ? 'Guardando...' : seleccionado ? 'Guardar cambios' : 'Crear plan'}</button>
+              <button style={styles.btn('primary')} disabled={loading} onClick={guardarTipo}>{loading ? 'Guardando...' : 'Guardar'}</button>
             </div>
           </div>
         </div>
       )}
-
-      {/* MODAL MEMBRESÍA */}
       {modal === 'membresia' && (
         <div style={styles.modal} onClick={e => e.target === e.currentTarget && setModal(null)}>
           <div style={styles.modalBox}>
@@ -388,14 +323,14 @@ function ModuloMembresias() {
             <div style={{ marginBottom: '14px' }}>
               <label style={styles.label}>Cliente *</label>
               <select style={styles.input} value={formMem.cliente_id} onChange={e => setFormMem({ ...formMem, cliente_id: e.target.value })}>
-                <option value="">— Seleccionar cliente —</option>
+                <option value="">— Seleccionar —</option>
                 {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.apellido_paterno} — {c.cui}</option>)}
               </select>
             </div>
             <div style={{ marginBottom: '14px' }}>
-              <label style={styles.label}>Plan (opcional, el precio se puede ajustar)</label>
-              <select style={styles.input} value={formMem.tipo_membresia_id} onChange={e => onChangeTipo(e.target.value)}>
-                <option value="">— Sin plan / precio libre —</option>
+              <label style={styles.label}>Plan (opcional)</label>
+              <select style={styles.input} value={formMem.tipo_membresia_id} onChange={e => { const t = tipos.find(t => t.id === e.target.value); setFormMem({ ...formMem, tipo_membresia_id: e.target.value, precio_pagado: t ? t.precio : formMem.precio_pagado }) }}>
+                <option value="">— Precio libre —</option>
                 {tipos.map(t => <option key={t.id} value={t.id}>{t.nombre} — Q{t.precio}</option>)}
               </select>
             </div>
@@ -404,38 +339,301 @@ function ModuloMembresias() {
               <button style={styles.tab(formMem.modo_fecha === 'manual')} onClick={() => setFormMem({ ...formMem, modo_fecha: 'manual' })}>Fechas manuales</button>
             </div>
             <div style={styles.grid2}>
-              <div>
-                <label style={styles.label}>Fecha inicio *</label>
-                <input style={styles.input} type="date" value={formMem.fecha_inicio} onChange={e => onChangeFechaInicio(e.target.value)} />
-              </div>
+              <div><label style={styles.label}>Fecha inicio *</label><input style={styles.input} type="date" value={formMem.fecha_inicio} onChange={e => setFormMem({ ...formMem, fecha_inicio: e.target.value, fecha_fin: formMem.modo_fecha === 'meses' ? calcularFechaFin(e.target.value, formMem.meses_duracion) : formMem.fecha_fin })} /></div>
               {formMem.modo_fecha === 'meses'
-                ? <div><label style={styles.label}>Duración (meses) *</label><input style={styles.input} type="number" step="0.25" placeholder="1, 3, 6, 12, 0.25..." value={formMem.meses_duracion} onChange={e => onChangeMeses(e.target.value)} /></div>
-                : <div><label style={styles.label}>Fecha fin *</label><input style={styles.input} type="date" value={formMem.fecha_fin} onChange={e => setFormMem({ ...formMem, fecha_fin: e.target.value })} /></div>
-              }
-              {formMem.fecha_fin && (
-                <div style={{ gridColumn: '1 / -1', backgroundColor: C.surface, padding: '10px 14px', borderRadius: '8px', fontSize: '13px', color: C.muted }}>
-                  📅 Vence el: <strong style={{ color: C.text }}>{formMem.fecha_fin}</strong>
-                </div>
-              )}
-              <div>
-                <label style={styles.label}>Precio total (Q) *</label>
-                <input style={styles.input} type="number" step="0.01" value={formMem.precio_pagado} onChange={e => setFormMem({ ...formMem, precio_pagado: e.target.value })} placeholder="0.00" />
+                ? <div><label style={styles.label}>Duración (meses) *</label><input style={styles.input} type="number" step="0.25" placeholder="1, 3, 6, 12..." value={formMem.meses_duracion} onChange={e => setFormMem({ ...formMem, meses_duracion: e.target.value, fecha_fin: calcularFechaFin(formMem.fecha_inicio, e.target.value) })} /></div>
+                : <div><label style={styles.label}>Fecha fin *</label><input style={styles.input} type="date" value={formMem.fecha_fin} onChange={e => setFormMem({ ...formMem, fecha_fin: e.target.value })} /></div>}
+              {formMem.fecha_fin && <div style={{ gridColumn: '1 / -1', backgroundColor: C.surface, padding: '10px 14px', borderRadius: '8px', fontSize: '13px', color: C.muted }}>📅 Vence el: <strong style={{ color: C.text }}>{formMem.fecha_fin}</strong></div>}
+              <div><label style={styles.label}>Precio total (Q) *</label><input style={styles.input} type="number" step="0.01" value={formMem.precio_pagado} onChange={e => setFormMem({ ...formMem, precio_pagado: e.target.value })} placeholder="0.00" /></div>
+              <div><label style={styles.label}>Monto pagado ahora (Q)</label><input style={styles.input} type="number" step="0.01" value={formMem.monto_pagado} onChange={e => setFormMem({ ...formMem, monto_pagado: e.target.value })} placeholder="0.00" /></div>
+              {formMem.precio_pagado && <div style={{ gridColumn: '1 / -1', backgroundColor: C.surface, padding: '10px 14px', borderRadius: '8px', fontSize: '13px' }}>Saldo pendiente: <strong style={{ color: (parseFloat(formMem.precio_pagado) - parseFloat(formMem.monto_pagado || 0)) > 0 ? C.yellow : C.green }}>Q{(parseFloat(formMem.precio_pagado) - parseFloat(formMem.monto_pagado || 0)).toFixed(2)}</strong></div>}
+            </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
+              <button style={styles.btn('secondary')} onClick={() => setModal(null)}>Cancelar</button>
+              <button style={styles.btn('primary')} disabled={loading} onClick={guardarMembresia}>{loading ? 'Guardando...' : 'Registrar'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ══════════════════════════════════════════════════════════
+// MÓDULO: PRODUCTOS
+// ══════════════════════════════════════════════════════════
+function ModuloProductos() {
+  const [productos, setProductos] = useState([])
+  const [modal, setModal] = useState(null)
+  const [seleccionado, setSeleccionado] = useState(null)
+  const [form, setForm] = useState({ nombre: '', costo: '', precio: '', stock: '', estado: 'disponible' })
+  const [msg, setMsg] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [busqueda, setBusqueda] = useState('')
+
+  useEffect(() => { cargarProductos() }, [])
+
+  async function cargarProductos() {
+    const { data } = await supabase.from('productos').select('*').order('fecha_registro', { ascending: false })
+    setProductos(data || [])
+  }
+
+  const filtrados = productos.filter(p => p.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+
+  async function guardar() {
+    if (!form.nombre || !form.precio || !form.costo) { setMsg({ type: 'error', text: 'Nombre, costo y precio son obligatorios' }); return }
+    setLoading(true)
+    const datos = { nombre: form.nombre, costo: parseFloat(form.costo), precio: parseFloat(form.precio), stock: parseInt(form.stock) || 0, estado: form.estado }
+    const { error } = seleccionado
+      ? await supabase.from('productos').update(datos).eq('id', seleccionado.id)
+      : await supabase.from('productos').insert(datos)
+    setLoading(false)
+    if (error) { setMsg({ type: 'error', text: error.message }); return }
+    setMsg({ type: 'success', text: seleccionado ? 'Producto actualizado' : 'Producto creado' })
+    cargarProductos(); setTimeout(() => setModal(null), 1200)
+  }
+
+  async function eliminar(p) {
+    if (!confirm(`¿Eliminar "${p.nombre}"?`)) return
+    await supabase.from('productos').delete().eq('id', p.id)
+    cargarProductos()
+  }
+
+  const estadoBadge = (e) => {
+    if (e === 'disponible') return <span style={styles.badge('green')}>Disponible</span>
+    if (e === 'agotado') return <span style={styles.badge('red')}>Agotado</span>
+    return <span style={styles.badge('')}>Descontinuado</span>
+  }
+
+  return (
+    <div>
+      <div style={styles.pageHeader}>
+        <h1 style={styles.pageTitle}>🛒 Productos</h1>
+        <button style={styles.btn('primary')} onClick={() => { setSeleccionado(null); setForm({ nombre: '', costo: '', precio: '', stock: '', estado: 'disponible' }); setMsg(null); setModal('producto') }}>+ Nuevo producto</button>
+      </div>
+      <div style={{ ...styles.card, padding: '14px 20px' }}>
+        <input style={styles.input} placeholder="🔍 Buscar producto..." value={busqueda} onChange={e => setBusqueda(e.target.value)} />
+      </div>
+      <div style={styles.card}>
+        <table style={styles.table}>
+          <thead><tr><th style={styles.th}>Producto</th><th style={styles.th}>Costo</th><th style={styles.th}>Precio</th><th style={styles.th}>Ganancia</th><th style={styles.th}>Stock</th><th style={styles.th}>Estado</th><th style={styles.th}>Acciones</th></tr></thead>
+          <tbody>
+            {filtrados.length === 0 && <tr><td colSpan={7} style={{ ...styles.td, textAlign: 'center', color: C.muted }}>No hay productos</td></tr>}
+            {filtrados.map(p => (
+              <tr key={p.id}>
+                <td style={styles.td}><strong>{p.nombre}</strong></td>
+                <td style={styles.td}>Q{parseFloat(p.costo).toFixed(2)}</td>
+                <td style={styles.td}><strong style={{ color: C.accent }}>Q{parseFloat(p.precio).toFixed(2)}</strong></td>
+                <td style={styles.td}><span style={{ color: C.green }}>Q{(parseFloat(p.precio) - parseFloat(p.costo)).toFixed(2)}</span></td>
+                <td style={styles.td}>{p.stock}</td>
+                <td style={styles.td}>{estadoBadge(p.estado)}</td>
+                <td style={styles.td}>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button style={{ ...styles.btn('secondary'), padding: '6px 12px', fontSize: '12px' }} onClick={() => { setSeleccionado(p); setForm({ nombre: p.nombre, costo: p.costo, precio: p.precio, stock: p.stock, estado: p.estado }); setMsg(null); setModal('producto') }}>Editar</button>
+                    <button style={{ ...styles.btn('danger'), padding: '6px 12px', fontSize: '12px' }} onClick={() => eliminar(p)}>Eliminar</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {modal === 'producto' && (
+        <div style={styles.modal} onClick={e => e.target === e.currentTarget && setModal(null)}>
+          <div style={styles.modalBox}>
+            <h2 style={{ margin: '0 0 20px', fontSize: '18px' }}>{seleccionado ? '✏️ Editar producto' : '➕ Nuevo producto'}</h2>
+            {msg && <div style={styles.alert(msg.type)}>{msg.text}</div>}
+            <div style={styles.grid2}>
+              <div style={{ gridColumn: '1 / -1' }}><label style={styles.label}>Nombre *</label><input style={styles.input} value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="Ej: Proteína Whey 1kg" /></div>
+              <div><label style={styles.label}>Costo (Q) *</label><input style={styles.input} type="number" step="0.01" value={form.costo} onChange={e => setForm({ ...form, costo: e.target.value })} placeholder="0.00" /></div>
+              <div><label style={styles.label}>Precio de venta (Q) *</label><input style={styles.input} type="number" step="0.01" value={form.precio} onChange={e => setForm({ ...form, precio: e.target.value })} placeholder="0.00" /></div>
+              {form.costo && form.precio && <div style={{ gridColumn: '1 / -1', backgroundColor: C.surface, padding: '10px 14px', borderRadius: '8px', fontSize: '13px' }}>Ganancia por unidad: <strong style={{ color: C.green }}>Q{(parseFloat(form.precio || 0) - parseFloat(form.costo || 0)).toFixed(2)}</strong></div>}
+              <div><label style={styles.label}>Stock (unidades)</label><input style={styles.input} type="number" value={form.stock} onChange={e => setForm({ ...form, stock: e.target.value })} placeholder="0" /></div>
+              <div><label style={styles.label}>Estado</label>
+                <select style={styles.input} value={form.estado} onChange={e => setForm({ ...form, estado: e.target.value })}>
+                  <option value="disponible">Disponible</option>
+                  <option value="agotado">Agotado</option>
+                  <option value="descontinuado">Descontinuado</option>
+                </select>
               </div>
-              <div>
-                <label style={styles.label}>Monto pagado ahora (Q)</label>
-                <input style={styles.input} type="number" step="0.01" value={formMem.monto_pagado} onChange={e => setFormMem({ ...formMem, monto_pagado: e.target.value })} placeholder="0.00 si no pagó aún" />
-              </div>
-              {formMem.precio_pagado && (
-                <div style={{ gridColumn: '1 / -1', backgroundColor: C.surface, padding: '10px 14px', borderRadius: '8px', fontSize: '13px' }}>
-                  Saldo pendiente: <strong style={{ color: (parseFloat(formMem.precio_pagado) - parseFloat(formMem.monto_pagado || 0)) > 0 ? C.yellow : C.green }}>
-                    Q{(parseFloat(formMem.precio_pagado) - parseFloat(formMem.monto_pagado || 0)).toFixed(2)}
-                  </strong>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
+              <button style={styles.btn('secondary')} onClick={() => setModal(null)}>Cancelar</button>
+              <button style={styles.btn('primary')} disabled={loading} onClick={guardar}>{loading ? 'Guardando...' : 'Guardar'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ══════════════════════════════════════════════════════════
+// MÓDULO: VENTAS
+// ══════════════════════════════════════════════════════════
+function ModuloVentas() {
+  const [ventas, setVentas] = useState([])
+  const [productos, setProductos] = useState([])
+  const [clientes, setClientes] = useState([])
+  const [modal, setModal] = useState(null)
+  const [ventaSeleccionada, setVentaSeleccionada] = useState(null)
+  const [msg, setMsg] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [abono, setAbono] = useState('')
+  const [filtro, setFiltro] = useState('todos')
+  const [form, setForm] = useState({ cliente_id: '', producto_id: '', cantidad: 1, monto_pagado: '' })
+
+  useEffect(() => { cargarTodo() }, [])
+
+  async function cargarTodo() {
+    const [{ data: v }, { data: p }, { data: c }] = await Promise.all([
+      supabase.from('ventas').select('*, cliente:cliente_id(nombre,apellido_paterno), producto:producto_id(nombre,precio)').order('fecha_venta', { ascending: false }),
+      supabase.from('productos').select('*').eq('estado', 'disponible').order('nombre'),
+      supabase.from('usuarios').select('id,nombre,apellido_paterno,cui').eq('rol', 'cliente').order('nombre'),
+    ])
+    setVentas(v || []); setProductos(p || []); setClientes(c || [])
+  }
+
+  const productoSeleccionado = productos.find(p => p.id === form.producto_id)
+  const precioTotal = productoSeleccionado ? parseFloat(productoSeleccionado.precio) * parseInt(form.cantidad || 1) : 0
+
+  async function registrarVenta() {
+    if (!form.cliente_id || !form.producto_id) { setMsg({ type: 'error', text: 'Cliente y producto son obligatorios' }); return }
+    setLoading(true)
+    const monto = parseFloat(form.monto_pagado) || 0
+    const estado_pago = monto >= precioTotal ? 'pagado' : monto > 0 ? 'parcial' : 'pendiente'
+    const cui = sessionStorage.getItem('cui')
+    const { data: admin } = await supabase.from('usuarios').select('id').eq('cui', cui).single()
+    const { error } = await supabase.from('ventas').insert({ cliente_id: form.cliente_id, producto_id: form.producto_id, cantidad: parseInt(form.cantidad), precio_total: precioTotal, monto_pagado: monto, estado_pago, registrado_por: admin?.id || null })
+    setLoading(false)
+    if (error) { setMsg({ type: 'error', text: error.message }); return }
+    setMsg({ type: 'success', text: 'Venta registrada correctamente' })
+    cargarTodo(); setTimeout(() => setModal(null), 1200)
+  }
+
+  async function registrarAbono() {
+    if (!abono || parseFloat(abono) <= 0) { alert('Ingresa un monto válido'); return }
+    const nuevoMonto = parseFloat(ventaSeleccionada.monto_pagado || 0) + parseFloat(abono)
+    const nuevoEstado = nuevoMonto >= parseFloat(ventaSeleccionada.precio_total) ? 'pagado' : 'parcial'
+    const cui = sessionStorage.getItem('cui')
+    const { data: admin } = await supabase.from('usuarios').select('id').eq('cui', cui).single()
+    await supabase.from('abonos').insert({ venta_id: ventaSeleccionada.id, monto: parseFloat(abono), registrado_por: admin?.id || null })
+    await supabase.from('ventas').update({ monto_pagado: nuevoMonto, estado_pago: nuevoEstado }).eq('id', ventaSeleccionada.id)
+    setAbono(''); setModal(null); cargarTodo()
+  }
+
+  const ventasFiltradas = ventas.filter(v => filtro === 'todos' ? true : v.estado_pago === filtro)
+
+  const pagoBadge = (e) => {
+    if (e === 'pagado') return <span style={styles.badge('green')}>Pagado</span>
+    if (e === 'parcial') return <span style={styles.badge('yellow')}>Parcial</span>
+    return <span style={styles.badge('red')}>Pendiente</span>
+  }
+
+  return (
+    <div>
+      <div style={styles.pageHeader}>
+        <h1 style={styles.pageTitle}>💰 Ventas</h1>
+        <button style={styles.btn('primary')} onClick={() => { setForm({ cliente_id: '', producto_id: '', cantidad: 1, monto_pagado: '' }); setMsg(null); setModal('venta') }}>+ Nueva venta</button>
+      </div>
+
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+        {['todos', 'pendiente', 'parcial', 'pagado'].map(f => (
+          <button key={f} style={{ ...styles.btn(filtro === f ? 'primary' : 'secondary'), padding: '7px 14px', fontSize: '13px' }} onClick={() => setFiltro(f)}>
+            {f === 'todos' ? 'Todos' : f === 'pendiente' ? '⚠️ Pendientes' : f === 'parcial' ? '🔶 Parciales' : '✅ Pagados'}
+          </button>
+        ))}
+      </div>
+
+      <div style={styles.card}>
+        <table style={styles.table}>
+          <thead><tr><th style={styles.th}>Cliente</th><th style={styles.th}>Producto</th><th style={styles.th}>Cant.</th><th style={styles.th}>Total</th><th style={styles.th}>Pagado</th><th style={styles.th}>Saldo</th><th style={styles.th}>Estado</th><th style={styles.th}>Acciones</th></tr></thead>
+          <tbody>
+            {ventasFiltradas.length === 0 && <tr><td colSpan={8} style={{ ...styles.td, textAlign: 'center', color: C.muted }}>No hay ventas</td></tr>}
+            {ventasFiltradas.map(v => (
+              <tr key={v.id}>
+                <td style={styles.td}><strong>{v.cliente?.nombre} {v.cliente?.apellido_paterno}</strong></td>
+                <td style={styles.td}>{v.producto?.nombre}</td>
+                <td style={styles.td}>{v.cantidad}</td>
+                <td style={styles.td}>Q{parseFloat(v.precio_total).toFixed(2)}</td>
+                <td style={styles.td}>Q{parseFloat(v.monto_pagado || 0).toFixed(2)}</td>
+                <td style={styles.td}><strong style={{ color: (parseFloat(v.precio_total) - parseFloat(v.monto_pagado || 0)) > 0 ? C.yellow : C.green }}>Q{(parseFloat(v.precio_total) - parseFloat(v.monto_pagado || 0)).toFixed(2)}</strong></td>
+                <td style={styles.td}>{pagoBadge(v.estado_pago)}</td>
+                <td style={styles.td}>
+                  {v.estado_pago !== 'pagado' && (
+                    <button style={{ ...styles.btn('success'), padding: '6px 12px', fontSize: '12px' }} onClick={() => { setVentaSeleccionada(v); setAbono(''); setModal('abono') }}>+ Abono</button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {modal === 'venta' && (
+        <div style={styles.modal} onClick={e => e.target === e.currentTarget && setModal(null)}>
+          <div style={styles.modalBox}>
+            <h2 style={{ margin: '0 0 20px', fontSize: '18px' }}>➕ Nueva venta</h2>
+            {msg && <div style={styles.alert(msg.type)}>{msg.text}</div>}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={styles.label}>Cliente *</label>
+              <select style={styles.input} value={form.cliente_id} onChange={e => setForm({ ...form, cliente_id: e.target.value })}>
+                <option value="">— Seleccionar cliente —</option>
+                {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre} {c.apellido_paterno} — {c.cui}</option>)}
+              </select>
+            </div>
+            <div style={{ marginBottom: '14px' }}>
+              <label style={styles.label}>Producto *</label>
+              <select style={styles.input} value={form.producto_id} onChange={e => setForm({ ...form, producto_id: e.target.value })}>
+                <option value="">— Seleccionar producto —</option>
+                {productos.map(p => <option key={p.id} value={p.id}>{p.nombre} — Q{p.precio}</option>)}
+              </select>
+            </div>
+            <div style={styles.grid2}>
+              <div><label style={styles.label}>Cantidad</label><input style={styles.input} type="number" min="1" value={form.cantidad} onChange={e => setForm({ ...form, cantidad: e.target.value })} /></div>
+              <div><label style={styles.label}>Monto pagado ahora (Q)</label><input style={styles.input} type="number" step="0.01" value={form.monto_pagado} onChange={e => setForm({ ...form, monto_pagado: e.target.value })} placeholder="0.00" /></div>
+              {productoSeleccionado && (
+                <div style={{ gridColumn: '1 / -1', backgroundColor: C.surface, padding: '14px', borderRadius: '8px', fontSize: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: C.muted }}>Total:</span>
+                    <strong style={{ color: C.accent }}>Q{precioTotal.toFixed(2)}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: C.muted }}>Saldo pendiente:</span>
+                    <strong style={{ color: (precioTotal - parseFloat(form.monto_pagado || 0)) > 0 ? C.yellow : C.green }}>
+                      Q{(precioTotal - parseFloat(form.monto_pagado || 0)).toFixed(2)}
+                    </strong>
+                  </div>
                 </div>
               )}
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
               <button style={styles.btn('secondary')} onClick={() => setModal(null)}>Cancelar</button>
-              <button style={styles.btn('primary')} disabled={loading} onClick={guardarMembresia}>{loading ? 'Guardando...' : 'Registrar membresía'}</button>
+              <button style={styles.btn('primary')} disabled={loading} onClick={registrarVenta}>{loading ? 'Guardando...' : 'Registrar venta'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modal === 'abono' && ventaSeleccionada && (
+        <div style={styles.modal} onClick={e => e.target === e.currentTarget && setModal(null)}>
+          <div style={{ ...styles.modalBox, width: '400px' }}>
+            <h2 style={{ margin: '0 0 20px', fontSize: '18px' }}>💳 Registrar abono</h2>
+            <div style={{ backgroundColor: C.surface, padding: '14px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
+              <div style={{ marginBottom: '6px' }}><strong>{ventaSeleccionada.cliente?.nombre} {ventaSeleccionada.cliente?.apellido_paterno}</strong></div>
+              <div style={{ color: C.muted, marginBottom: '6px' }}>{ventaSeleccionada.producto?.nombre}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>Saldo pendiente:</span>
+                <strong style={{ color: C.yellow }}>Q{(parseFloat(ventaSeleccionada.precio_total) - parseFloat(ventaSeleccionada.monto_pagado || 0)).toFixed(2)}</strong>
+              </div>
+            </div>
+            <div>
+              <label style={styles.label}>Monto del abono (Q)</label>
+              <input style={styles.input} type="number" step="0.01" value={abono} onChange={e => setAbono(e.target.value)} placeholder="0.00" autoFocus />
+            </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
+              <button style={styles.btn('secondary')} onClick={() => setModal(null)}>Cancelar</button>
+              <button style={styles.btn('success')} onClick={registrarAbono}>Registrar abono</button>
             </div>
           </div>
         </div>
@@ -448,18 +646,20 @@ function ModuloMembresias() {
 // MÓDULO: DASHBOARD
 // ══════════════════════════════════════════════════════════
 function ModuloDashboard() {
-  const [stats, setStats] = useState({ clientes: 0, activas: 0, vencidas: 0, morosos: 0 })
+  const [stats, setStats] = useState({ clientes: 0, activas: 0, vencidas: 0, morosos: 0, ingresos: 0 })
   const nombre = sessionStorage.getItem('nombre')
 
   useEffect(() => {
     async function cargar() {
-      const [{ count: clientes }, { count: activas }, { count: vencidas }, { count: morosos }] = await Promise.all([
+      const [{ count: clientes }, { count: activas }, { count: vencidas }, { count: morosos }, { data: ventas }] = await Promise.all([
         supabase.from('usuarios').select('*', { count: 'exact', head: true }).eq('rol', 'cliente'),
         supabase.from('membresias').select('*', { count: 'exact', head: true }).eq('estado', 'activa'),
         supabase.from('membresias').select('*', { count: 'exact', head: true }).eq('estado', 'vencida'),
         supabase.from('membresias').select('*', { count: 'exact', head: true }).eq('estado_pago', 'parcial'),
+        supabase.from('ventas').select('monto_pagado'),
       ])
-      setStats({ clientes: clientes || 0, activas: activas || 0, vencidas: vencidas || 0, morosos: morosos || 0 })
+      const ingresos = (ventas || []).reduce((acc, v) => acc + parseFloat(v.monto_pagado || 0), 0)
+      setStats({ clientes: clientes || 0, activas: activas || 0, vencidas: vencidas || 0, morosos: morosos || 0, ingresos })
     }
     cargar()
   }, [])
@@ -488,29 +688,12 @@ function ModuloDashboard() {
           </div>
         ))}
       </div>
-    </div>
-  )
-}
-
-function ModuloProductos() {
-  return (
-    <div>
-      <div style={styles.pageHeader}><h1 style={styles.pageTitle}>🛒 Productos</h1></div>
-      <div style={{ ...styles.card, textAlign: 'center', padding: '60px', color: C.muted }}>
-        <div style={{ fontSize: '48px', marginBottom: '12px' }}>📦</div>
-        <p style={{ fontSize: '16px' }}>Módulo de productos — próximamente</p>
-      </div>
-    </div>
-  )
-}
-
-function ModuloVentas() {
-  return (
-    <div>
-      <div style={styles.pageHeader}><h1 style={styles.pageTitle}>💰 Ventas</h1></div>
-      <div style={{ ...styles.card, textAlign: 'center', padding: '60px', color: C.muted }}>
-        <div style={{ fontSize: '48px', marginBottom: '12px' }}>💳</div>
-        <p style={{ fontSize: '16px' }}>Módulo de ventas — próximamente</p>
+      <div style={{ ...styles.statCard, marginTop: '16px', display: 'flex', alignItems: 'center', gap: '20px' }}>
+        <div style={{ fontSize: '36px' }}>💵</div>
+        <div>
+          <div style={{ ...styles.statNum, color: C.green, fontSize: '28px' }}>Q{stats.ingresos.toFixed(2)}</div>
+          <div style={styles.statLabel}>Total cobrado en ventas de productos</div>
+        </div>
       </div>
     </div>
   )
