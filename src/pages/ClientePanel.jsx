@@ -195,6 +195,7 @@ export default function ClientePanel() {
                 { label: 'Nombre completo', value: `${usuario?.nombre} ${usuario?.apellido_paterno} ${usuario?.apellido_materno || ''}`.trim() },
                 { label: 'CUI', value: usuario?.cui },
                 { label: 'Teléfono', value: usuario?.telefono || 'No registrado' },
+                { label: 'Código de acceso', value: usuario?.codigo_acceso || '—' },
                 { label: 'Observaciones', value: usuario?.observaciones || 'Ninguna' },
               ].map((row, i) => (
                 <div key={i} style={{ ...styles.infoRow, borderBottom: i < 3 ? `1px solid ${C.border}` : 'none' }}>
