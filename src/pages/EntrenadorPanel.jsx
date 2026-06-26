@@ -76,11 +76,23 @@ function ModuloClientes() {
       setMsg({ type: 'error', text: 'CUI, nombre, apellido paterno y contraseña son obligatorios' }); return
     }
     setLoading(true)
-    const { error: signErr } = await supabase.auth.signUp({ email: `${form.cui}@gimnasio.local`, password: form.password_hash, options: { emailRedirectTo: undefined } })
-    if (signErr && !signErr.message.includes('already registered')) {
-      setMsg({ type: 'error', text: 'Error: ' + signErr.message }); setLoading(false); return
+
+    // Crear usuario en Auth via Edge Function (sin interrumpir sesión actual)
+    const { data: fnData, error: fnErr } = await supabase.functions.invoke('crear-usuario', {
+      body: { cui: form.cui, password: form.password_hash }
+    })
+
+    if (fnErr || fnData?.error) {
+      setMsg({ type: 'error', text: 'Error al crear acceso: ' + (fnData?.error || fnErr?.message) })
+      setLoading(false); return
     }
-    const { error: dbErr } = await supabase.from('usuarios').insert({ cui: form.cui, nombre: form.nombre, apellido_paterno: form.apellido_paterno, apellido_materno: form.apellido_materno, telefono: form.telefono, observaciones: form.observaciones, rol: 'cliente', password_hash: 'auth' })
+
+    // Insertar en tabla usuarios
+    const { error: dbErr } = await supabase.from('usuarios').insert({
+      cui: form.cui, nombre: form.nombre, apellido_paterno: form.apellido_paterno,
+      apellido_materno: form.apellido_materno, telefono: form.telefono,
+      observaciones: form.observaciones, rol: 'cliente', password_hash: 'auth'
+    })
     setLoading(false)
     if (dbErr) { setMsg({ type: 'error', text: dbErr.message }); return }
     setMsg({ type: 'success', text: 'Cliente creado correctamente' })
